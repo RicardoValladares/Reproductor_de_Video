@@ -1,0 +1,8 @@
+C:\Users\nn\Downloads\DirectShowSource\bin\Debug\DirectShow.exe
+C:\Users\nn\Downloads\DirectShowSource\bin\Debug\DirectShow.pdb
+C:\Users\nn\Downloads\DirectShowSource\bin\Debug\Interop.QuartzTypeLib.dll
+C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.Form1.resources
+C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.csproj.GenerateResource.Cache
+C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.exe
+C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.pdb
+C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.Properties.Resources.resources
