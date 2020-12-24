@@ -6,3 +6,11 @@ C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.Properties.Resources
 C:\Users\nn\Downloads\DirectShowSource\obj\Debug\Reproductor.csproj.GenerateResource.Cache
 C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.exe
 C:\Users\nn\Downloads\DirectShowSource\obj\Debug\DirectShow.pdb
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\bin\Debug\Interop.QuartzTypeLib.dll
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\obj\Debug\DirectShow.Form1.resources
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\obj\Debug\Reproductor.csproj.GenerateResource.Cache
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\bin\Debug\Reproductor.exe
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\bin\Debug\Reproductor.pdb
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\obj\Debug\Reproductor.Properties.Resources.resources
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\obj\Debug\Reproductor.exe
+C:\Users\nn\Downloads\Reproductor_de_Video-main\Reproductor_de_Video-main\obj\Debug\Reproductor.pdb

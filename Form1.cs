@@ -274,7 +274,7 @@ namespace DirectShow
 
                 m_objMediaControl = m_objFilterGraph as IMediaControl;
 
-                this.Text = "DirectShow - [" + openFileDialog.FileName + "]";
+                this.Text = "[" + openFileDialog.FileName + "]";
 
                 m_objMediaControl.Run();
                 m_CurrentStatus = MediaStatus.Running;
