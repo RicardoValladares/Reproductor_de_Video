@@ -7,13 +7,9 @@ using System.Data;
 
 using QuartzTypeLib;
 
-namespace DirectShow
-{
-	/// <summary>
-	/// Zusammendfassende Beschreibung für Form1.
-	/// </summary>
-    public class Form1 : System.Windows.Forms.Form
-    {
+namespace DirectShow{
+    public class Form1 : System.Windows.Forms.Form{
+        /*objetos a usar*/
         private System.Windows.Forms.ToolBar toolBar1;
         private System.Windows.Forms.ToolBarButton toolBarButton1;
         private System.Windows.Forms.ToolBarButton toolBarButton2;
@@ -26,13 +22,11 @@ namespace DirectShow
         private System.Windows.Forms.StatusBarPanel statusBarPanel2;
         private System.Windows.Forms.StatusBarPanel statusBarPanel3;
         private System.ComponentModel.IContainer components;
-
         private const int WM_APP = 0x8000;
         private const int WM_GRAPHNOTIFY = WM_APP + 1;
         private const int EC_COMPLETE = 0x01;
         private const int WS_CHILD = 0x40000000;
         private const int WS_CLIPCHILDREN = 0x2000000;
-
         private FilgraphManager m_objFilterGraph = null;
         private IBasicAudio m_objBasicAudio = null;
         private IVideoWindow m_objVideoWindow = null;
@@ -41,49 +35,185 @@ namespace DirectShow
         private IMediaPosition m_objMediaPosition = null;
         private IMediaControl m_objMediaControl = null;
         private ToolBarButton toolBarButton4;
-
         enum MediaStatus { None, Stopped, Paused, Running };
-
         private MediaStatus m_CurrentStatus = MediaStatus.None;
-
-        public Form1()
-        {
-            //
-            // Erforderlich für die Windows Form-Designerunterstützung
-            //
+        /*inicio del programa*/
+        [STAThread]
+        static void Main(){
+            Application.Run(new Form1());
+        }
+        /*inicializamos formulario*/
+        public Form1(){
             InitializeComponent();
-
-            //
-            // TODO: Fügen Sie den Konstruktorcode nach dem Aufruf von InitializeComponent hinzu
-            //
             UpdateStatusBar();
             UpdateToolBar();
         }
-
-        /// <summary>
-        /// Die verwendeten Ressourcen bereinigen.
-        /// </summary>
-        protected override void Dispose( bool disposing )
-        {
-            CleanUp();
-            
-            if( disposing )
-            {
-                if (components != null) 
-                {
-                    components.Dispose();
-                }
+        /*evento para la barra de tareas*/
+        private void toolBar1_ButtonClick(object sender, System.Windows.Forms.ToolBarButtonClickEventArgs e){
+            switch (toolBar1.Buttons.IndexOf(e.Button)){
+                case 0: //si es el boton en posicion 0 es abrir
+                    open(); 
+                break;
+                case 1: //si es el boton en posicion 1 es play
+                    m_objMediaControl.Run(); 
+                    m_CurrentStatus = MediaStatus.Running;
+                break;
+                case 2: //si es el boton en posicion 2 es pausa
+                    m_objMediaControl.Pause();
+                    m_CurrentStatus = MediaStatus.Paused;
+                break;
+                case 3: //si es el boton en posicion 3 es stop
+                    m_objMediaControl.Stop(); 
+                    m_objMediaPosition.CurrentPosition = 0;
+                    m_CurrentStatus = MediaStatus.Stopped;
+                break;
             }
+            //actualizamos la interfaz para bloquear y desbloquear opciones
+            UpdateStatusBar();
+            UpdateToolBar();
+        }
+        /*metodo para actualizar barra de tareas*/
+        private void UpdateToolBar(){
+            switch (m_CurrentStatus){
+                case MediaStatus.None: 
+                    toolBarButton1.Enabled = false;
+                    toolBarButton2.Enabled = false;
+                    toolBarButton3.Enabled = false;
+                break;
+                case MediaStatus.Paused: 
+                    toolBarButton1.Enabled = true;
+                    toolBarButton2.Enabled = false;
+                    toolBarButton3.Enabled = true;
+                break;
+                case MediaStatus.Running: 
+                    toolBarButton1.Enabled = false;
+                    toolBarButton2.Enabled = true;
+                    toolBarButton3.Enabled = true;
+                break;
+                case MediaStatus.Stopped: 
+                    toolBarButton1.Enabled = true;
+                    toolBarButton2.Enabled = false;
+                    toolBarButton3.Enabled = false;
+                break;
+            }
+        }
+        /*metodo para actualizar el contador de tiempo del reproductor y su estado*/
+        private void UpdateStatusBar(){
+            switch (m_CurrentStatus){
+                case MediaStatus.None: statusBarPanel1.Text = "Stopped"; break;
+                case MediaStatus.Paused: statusBarPanel1.Text = "Paused "; break;
+                case MediaStatus.Running: statusBarPanel1.Text = "Running"; break;
+                case MediaStatus.Stopped: statusBarPanel1.Text = "Stopped"; break;
+            }
+            if (m_objMediaPosition != null){
+                int s = (int)m_objMediaPosition.Duration;
+                int h = s / 3600;
+                int m = (s - (h * 3600)) / 60;
+                s = s - (h * 3600 + m * 60);
+                statusBarPanel2.Text = String.Format("{0:D2}:{1:D2}:{2:D2}", h, m, s);
+                s = (int)m_objMediaPosition.CurrentPosition;
+                h = s / 3600;
+                m = (s - (h * 3600)) / 60;
+                s = s - (h * 3600 + m * 60);
+                statusBarPanel3.Text = String.Format("{0:D2}:{1:D2}:{2:D2}", h, m, s);
+            }
+            else{
+                statusBarPanel2.Text = "00:00:00";
+                statusBarPanel3.Text = "00:00:00";
+            }
+        }
+        /*metodo de apertura de archivo*/
+        private void open(){
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Media Files|*.mpg;*.avi;*.wma;*.mov;*.wav;*.mp2;*.mp3|All Files|*.*";
+            if (DialogResult.OK == openFileDialog.ShowDialog()){
+                CleanUp();
+                m_objFilterGraph = new FilgraphManager();
+                m_objFilterGraph.RenderFile(openFileDialog.FileName);
+                m_objBasicAudio = m_objFilterGraph as IBasicAudio;
+                try{
+                    m_objVideoWindow = m_objFilterGraph as IVideoWindow;
+                    m_objVideoWindow.Owner = (int)panel1.Handle;
+                    m_objVideoWindow.WindowStyle = WS_CHILD | WS_CLIPCHILDREN;
+                    m_objVideoWindow.SetWindowPosition(panel1.ClientRectangle.Left,
+                        panel1.ClientRectangle.Top,
+                        panel1.ClientRectangle.Width,
+                        panel1.ClientRectangle.Height);
+                }
+                catch (Exception){
+                    m_objVideoWindow = null;
+                }
+                m_objMediaEvent = m_objFilterGraph as IMediaEvent;
+                m_objMediaEventEx = m_objFilterGraph as IMediaEventEx;
+                m_objMediaEventEx.SetNotifyWindow((int)this.Handle, WM_GRAPHNOTIFY, 0);
+                m_objMediaPosition = m_objFilterGraph as IMediaPosition;
+                m_objMediaControl = m_objFilterGraph as IMediaControl;
+                this.Text = "[" + openFileDialog.FileName + "]";
+                m_objMediaControl.Run();
+                m_CurrentStatus = MediaStatus.Running;
+                UpdateStatusBar();
+                UpdateToolBar();
+            }
+        }
+        /*limpieza en el reproductor*/
+        private void CleanUp(){
+            if (m_objMediaControl != null)
+                m_objMediaControl.Stop();
+            m_CurrentStatus = MediaStatus.Stopped;
+            if (m_objMediaEventEx != null)
+                m_objMediaEventEx.SetNotifyWindow(0, 0, 0);
+            if (m_objVideoWindow != null){
+                m_objVideoWindow.Visible = 0;
+                m_objVideoWindow.Owner = 0;
+            }
+            if (m_objMediaControl != null) m_objMediaControl = null;
+            if (m_objMediaPosition != null) m_objMediaPosition = null;
+            if (m_objMediaEventEx != null) m_objMediaEventEx = null;
+            if (m_objMediaEvent != null) m_objMediaEvent = null;
+            if (m_objVideoWindow != null) m_objVideoWindow = null;
+            if (m_objBasicAudio != null) m_objBasicAudio = null;
+            if (m_objFilterGraph != null) m_objFilterGraph = null;
+        }
+        protected override void Dispose( bool disposing ){
+            CleanUp();
+            if( disposing ){ if (components != null) { components.Dispose(); } }
             base.Dispose( disposing );
         }
+        /*actualizador con timer tick segundo a segundo*/
+        private void timer1_Tick(object sender, System.EventArgs e){
+            if (m_CurrentStatus == MediaStatus.Running){ UpdateStatusBar(); }
+        }
 
-		#region Windows Form Designer generated code
-        /// <summary>
-        /// Erforderliche Methode für die Designerunterstützung. 
-        /// Der Inhalt der Methode darf nicht mit dem Code-Editor geändert werden.
-        /// </summary>
-        private void InitializeComponent()
-        {
+        /*procesos de la ventana*/
+        protected override void WndProc(ref Message m){
+            if (m.Msg == WM_GRAPHNOTIFY){
+                int lEventCode;
+                int lParam1, lParam2;
+                //ejecutar siempre
+                while (true){
+                    try{
+                        m_objMediaEventEx.GetEvent(out lEventCode, out lParam1, out lParam2,0);
+                        m_objMediaEventEx.FreeEventParams(lEventCode, lParam1, lParam2);
+                        //al terminar de reproducir el video ejecutar los siguientes eventos
+                        if (lEventCode == EC_COMPLETE){
+                            m_objMediaControl.Stop();
+                            m_objMediaPosition.CurrentPosition = 0;
+                            m_CurrentStatus = MediaStatus.Stopped;
+                            UpdateStatusBar();
+                            UpdateToolBar();
+                            //este codigo es util si queremos reproducir automaticamente una lista de videos
+                            /*m_objMediaControl.Run();
+                            m_CurrentStatus = MediaStatus.Running;*/
+                        }
+                    }catch (Exception){ break;}
+                }
+            }
+            base.WndProc(ref m);
+        }
+
+        /*interfaz grafica*/
+		#region Interfaz grafica
+        private void InitializeComponent(){
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.toolBar1 = new System.Windows.Forms.ToolBar();
@@ -218,241 +348,16 @@ namespace DirectShow
             ((System.ComponentModel.ISupportInitialize)(this.statusBarPanel3)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 		#endregion
 
-        /// <summary>
-        /// Der Haupteinstiegspunkt für die Anwendung.
-        /// </summary>
-        [STAThread]
-        static void Main() 
-        {
-            Application.Run(new Form1());
-        }
-
-
-
-
-
-        private void open()
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-
-            openFileDialog.Filter = "Media Files|*.mpg;*.avi;*.wma;*.mov;*.wav;*.mp2;*.mp3|All Files|*.*";
-
-            if (DialogResult.OK == openFileDialog.ShowDialog())
-            {
-                CleanUp();
-
-                m_objFilterGraph = new FilgraphManager();
-                m_objFilterGraph.RenderFile(openFileDialog.FileName);
-
-                m_objBasicAudio = m_objFilterGraph as IBasicAudio;
-
-                try
-                {
-                    m_objVideoWindow = m_objFilterGraph as IVideoWindow;
-                    m_objVideoWindow.Owner = (int)panel1.Handle;
-                    m_objVideoWindow.WindowStyle = WS_CHILD | WS_CLIPCHILDREN;
-                    m_objVideoWindow.SetWindowPosition(panel1.ClientRectangle.Left,
-                        panel1.ClientRectangle.Top,
-                        panel1.ClientRectangle.Width,
-                        panel1.ClientRectangle.Height);
-                }
-                catch (Exception)
-                {
-                    m_objVideoWindow = null;
-                }
-
-                m_objMediaEvent = m_objFilterGraph as IMediaEvent;
-
-                m_objMediaEventEx = m_objFilterGraph as IMediaEventEx;
-                m_objMediaEventEx.SetNotifyWindow((int)this.Handle, WM_GRAPHNOTIFY, 0);
-
-                m_objMediaPosition = m_objFilterGraph as IMediaPosition;
-
-                m_objMediaControl = m_objFilterGraph as IMediaControl;
-
-                this.Text = "[" + openFileDialog.FileName + "]";
-
-                m_objMediaControl.Run();
-                m_CurrentStatus = MediaStatus.Running;
-
-                UpdateStatusBar();
-                UpdateToolBar();
+        /*redimensionar el visor de video al redimensionar la ventana*/        
+        private void Form1_SizeChanged(object sender, System.EventArgs e){
+            if (m_objVideoWindow != null){
+                m_objVideoWindow.SetWindowPosition(panel1.ClientRectangle.Left,panel1.ClientRectangle.Top,panel1.ClientRectangle.Width,panel1.ClientRectangle.Height);
             }
         }
 
-        private void CleanUp()
-        {
-            if (m_objMediaControl != null)
-                m_objMediaControl.Stop();
-
-            m_CurrentStatus = MediaStatus.Stopped;
-
-            if (m_objMediaEventEx != null)
-                m_objMediaEventEx.SetNotifyWindow(0, 0, 0);
-
-            if (m_objVideoWindow != null)
-            {
-                m_objVideoWindow.Visible = 0;
-                m_objVideoWindow.Owner = 0;
-            }
-
-            if (m_objMediaControl != null) m_objMediaControl = null;
-            if (m_objMediaPosition != null) m_objMediaPosition = null;
-            if (m_objMediaEventEx != null) m_objMediaEventEx = null;
-            if (m_objMediaEvent != null) m_objMediaEvent = null;
-            if (m_objVideoWindow != null) m_objVideoWindow = null;
-            if (m_objBasicAudio != null) m_objBasicAudio = null;
-            if (m_objFilterGraph != null) m_objFilterGraph = null;
-        }
-
-        private void menuItem4_Click(object sender, System.EventArgs e)
-        {
-            this.Close();
-        }
-
-        private void Form1_SizeChanged(object sender, System.EventArgs e)
-        {
-            if (m_objVideoWindow != null)
-            {
-                m_objVideoWindow.SetWindowPosition(panel1.ClientRectangle.Left,
-                    panel1.ClientRectangle.Top,
-                    panel1.ClientRectangle.Width,
-                    panel1.ClientRectangle.Height);
-            }
-        }
-
-        private void toolBar1_ButtonClick(object sender, System.Windows.Forms.ToolBarButtonClickEventArgs e)
-        {
-            switch(toolBar1.Buttons.IndexOf(e.Button))
-            {
-                case 0: open();
-                    break; 
-                case 1: m_objMediaControl.Run();
-                        m_CurrentStatus = MediaStatus.Running;
-                        break; 
-
-                case 2: m_objMediaControl.Pause();
-                        m_CurrentStatus = MediaStatus.Paused;
-                        break; 
-
-                case 3: m_objMediaControl.Stop();
-                        m_objMediaPosition.CurrentPosition = 0;
-                        m_CurrentStatus = MediaStatus.Stopped;
-                        break; 
-            }
-            
-            UpdateStatusBar();
-            UpdateToolBar();                        
-        }
-
-        protected override void WndProc( ref Message m)
-        {
-            if (m.Msg == WM_GRAPHNOTIFY)
-            {
-                int lEventCode;
-                int lParam1, lParam2;
-
-                while (true)
-                {
-                    try
-                    {
-                        m_objMediaEventEx.GetEvent(out lEventCode, 
-                            out lParam1,
-                            out lParam2,
-                            0); 
- 
-                        m_objMediaEventEx.FreeEventParams(lEventCode, lParam1, lParam2);
-
-                        if (lEventCode == EC_COMPLETE)
-                        {
-                            m_objMediaControl.Stop();
-                            m_objMediaPosition.CurrentPosition = 0;
-                            m_CurrentStatus = MediaStatus.Stopped;
-                            UpdateStatusBar();
-                            UpdateToolBar();
-                            /*m_objMediaControl.Run();
-                            m_CurrentStatus = MediaStatus.Running;*/
-                        }
-                    } 
-                    catch (Exception)
-                    {
-                        break;
-                    }
-                }
-            }
-
-            base.WndProc(ref m);
-        }
-
-        private void timer1_Tick(object sender, System.EventArgs e)
-        {
-            if (m_CurrentStatus == MediaStatus.Running)
-            {
-                UpdateStatusBar();
-            }
-        }
-
-        private void UpdateStatusBar()
-        {
-            switch (m_CurrentStatus)
-            {
-                case MediaStatus.None   : statusBarPanel1.Text = "Stopped"; break;
-                case MediaStatus.Paused : statusBarPanel1.Text = "Paused "; break;
-                case MediaStatus.Running: statusBarPanel1.Text = "Running"; break;
-                case MediaStatus.Stopped: statusBarPanel1.Text = "Stopped"; break;
-            }
-
-            if (m_objMediaPosition != null)
-            {
-                int s = (int) m_objMediaPosition.Duration;
-                int h = s / 3600;
-                int m = (s  - (h * 3600)) / 60;
-                s = s - (h * 3600 + m * 60);
-                
-                statusBarPanel2.Text = String.Format("{0:D2}:{1:D2}:{2:D2}", h, m, s);
-
-                s = (int) m_objMediaPosition.CurrentPosition;
-                h = s / 3600;
-                m = (s  - (h * 3600)) / 60;
-                s = s - (h * 3600 + m * 60);
-                
-                statusBarPanel3.Text = String.Format("{0:D2}:{1:D2}:{2:D2}", h, m, s);
-            }
-            else
-            {
-                statusBarPanel2.Text = "00:00:00";
-                statusBarPanel3.Text = "00:00:00";
-            }
-        }
-
-        private void UpdateToolBar()
-        {
-            switch (m_CurrentStatus)
-            {
-                case MediaStatus.None   : toolBarButton1.Enabled = false;
-                                          toolBarButton2.Enabled = false;
-                                          toolBarButton3.Enabled = false;
-                                          break;
-                                          
-                case MediaStatus.Paused : toolBarButton1.Enabled = true;
-                                          toolBarButton2.Enabled = false;
-                                          toolBarButton3.Enabled = true;
-                                          break;
-                                          
-                case MediaStatus.Running: toolBarButton1.Enabled = false;
-                                          toolBarButton2.Enabled = true;
-                                          toolBarButton3.Enabled = true;
-                                          break;
-                                          
-                case MediaStatus.Stopped: toolBarButton1.Enabled = true;
-                                          toolBarButton2.Enabled = false;
-                                          toolBarButton3.Enabled = false;
-                                          break;
-            }
-        }
+        
     }
 }
